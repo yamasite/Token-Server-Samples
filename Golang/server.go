@@ -14,12 +14,14 @@ import (
 
 type rtc_int_token_struct struct{
 	Uid_rtc_int uint32 `json:"uid"`
-	channelName string `json:"ChannelName"`
+	Channel_name string `json:"ChannelName"`
+    Role uint32 `json:"role"`
 }
 
 type rtc_string_token_struct struct{
 	Uid_rtc_string string `json:"uid"`
-	channelName string `json:"ChannelName"`
+	Channel_name string `json:"ChannelName"`
+    Role uint32 `json:"role"`
 }
 
 type rtm_token_struct struct{
@@ -28,53 +30,54 @@ type rtm_token_struct struct{
 
 var rtc_token string
 var rtm_token string
-var whiteboard_token string
 var is_string_uid bool
 var int_uid uint32
 var string_uid string
+var rtm_uid string
 var channel_name string
 
-func getRtcToken(is_string_uid bool, int_uid uint32, string_uid string, channelName string){
+var role_num uint32
+var role rtctokenbuilder.Role
 
-	appID := "Your App ID"
-	appCertificate := "Your App Certificate"
+func generateRtcToken(is_string_uid bool, int_uid uint32, string_uid string, channelName string){
+
+	appID := "App ID"
+	appCertificate := "Certificate"
 	expireTimeInSeconds := uint32(3600)
 	currentTimestamp := uint32(time.Now().UTC().Unix())
 	expireTimestamp := currentTimestamp + expireTimeInSeconds
 
-	result, err := rtctokenbuilder.BuildTokenWithUID(appID, appCertificate, channelName, int_uid, rtctokenbuilder.RoleAttendee, expireTimestamp)
+	result, err := rtctokenbuilder.BuildTokenWithUID(appID, appCertificate, channelName, int_uid, role, expireTimestamp)
 	if (err != nil || is_string_uid == true) {
 		fmt.Println(err)
 	} else {
 		fmt.Printf("Token with uid: %s\n", result)
 		fmt.Printf("uid is ", int_uid )
-		fmt.Printf("ChannelName is ", channelName)
+		fmt.Printf("ChannelName is %s\n", channelName)
 	}
 
-	result, err = rtctokenbuilder.BuildTokenWithUserAccount(appID, appCertificate, channelName, string_uid, rtctokenbuilder.RoleAttendee, expireTimestamp)
+	result, err = rtctokenbuilder.BuildTokenWithUserAccount(appID, appCertificate, channelName, string_uid, role, expireTimestamp)
 	if (err != nil || is_string_uid == false) {
 		fmt.Println(err)
 	} else {
 		fmt.Printf("Token with userAccount: %s\n", result)
-		fmt.Printf("uid is", string_uid)
-		fmt.Printf("ChannelName is ", channelName)
+		fmt.Printf("uid is %s\n", string_uid)
+		fmt.Printf("ChannelName is %s\n", channelName)
 
 	}
-
 	rtc_token = result
 
 }
 
-func getRtmToken(uid string){ 
+func generateRtmToken(rtm_uid string){
 
-	appID := "Your App ID"
-	appCertificate := "Your App Certificate"
-	user := "test_user_id"
+	appID := "App ID"
+	appCertificate := "Certificate"
 	expireTimeInSeconds := uint32(3600)
 	currentTimestamp := uint32(time.Now().UTC().Unix())
 	expireTimestamp := currentTimestamp + expireTimeInSeconds
 
-	result, err := rtmtokenbuilder.BuildToken(appID, appCertificate, user, rtmtokenbuilder.RoleRtmUser, expireTimestamp)
+	result, err := rtmtokenbuilder.BuildToken(appID, appCertificate, rtm_uid, rtmtokenbuilder.RoleRtmUser, expireTimestamp)
 	if err != nil {
 		fmt.Println(err)
 	} else {
@@ -85,32 +88,45 @@ func getRtmToken(uid string){
 	}
 }
 
+
 func rtcTokenHandler(w http.ResponseWriter, r *http.Request){
+    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+    w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    w.Header().Set("Access-Control-Allow-Headers", "*");
 
-	if r.Method != "GET" {
-	    http.Error(w, "Unsupported method. Please check.", http.StatusNotFound)
-	    return
-	}
+    if r.Method == "OPTIONS" {
+        w.WriteHeader(http.StatusOK)
+        return
+    }
 
-	headerContentTtype := r.Header.Get("Content-type")
-	if headerContentTtype != "application/json" {
-		errorResponse(w, "Content Type is not application/json", http.StatusUnsupportedMediaType)
-		return
-	}
+    if r.Method != "POST" && r.Method != "OPTIONS" {
+        http.Error(w, "Unsupported method. Please check.", http.StatusNotFound)
+        return
+    }
 
-  var t_int rtc_int_token_struct
+
+    var t_int rtc_int_token_struct
 	var unmarshalErr *json.UnmarshalTypeError
-
-	int_decoder := json.NewDecoder(r.Body)
+    int_decoder := json.NewDecoder(r.Body)
 	int_err := int_decoder.Decode(&t_int)
-
 	if (int_err == nil) {
 
                 int_uid = t_int.Uid_rtc_int
                 is_string_uid = false
-                channel_name = t_int.channelName
+                channel_name = t_int.Channel_name
+                role_num = t_int.Role
+                switch role {
+                case 0:
+                    role = rtctokenbuilder.RoleAttendee
+                case 1:
+                    role = rtctokenbuilder.RolePublisher
+                case 2:
+                    role = rtctokenbuilder.RoleSubscriber
+                case 101:
+                    role = rtctokenbuilder.RoleAdmin
+                }
 	}
-
        if (int_err != nil) {
 
            if errors.As(int_err, &unmarshalErr){
@@ -118,117 +134,115 @@ func rtcTokenHandler(w http.ResponseWriter, r *http.Request){
                 } else {
                 errorResponse(w, "Bad request.", http.StatusBadRequest)
             }
-
 	    return
-
        }
 
-
-
-	getRtcToken(is_string_uid, int_uid, string_uid, channel_name)
-
-	// fmt.Fprintf(w, rtc_token)
+	generateRtcToken(is_string_uid, int_uid, string_uid, channel_name)
 	errorResponse(w, rtc_token, http.StatusOK)
-
 	log.Println(w, r)
-
-
-
 }
 
 func rtcStringTokenHandler(w http.ResponseWriter, r *http.Request){
 
-        if r.Method != "GET" {
-            http.Error(w, "Unsupported method. Please check.", http.StatusNotFound)
+    w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS");
+    w.Header().Set("Access-Control-Allow-Headers", "*");
+    w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+    w.Header().Set("Access-Control-Allow-Origin", "*")
+
+        if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusOK)
             return
         }
 
-        headerContentTtype := r.Header.Get("Content-type")
-        if headerContentTtype != "application/json" {
-                errorResponse(w, "Content Type is not application/json", http.StatusUnsupportedMediaType)
-                return
+        if r.Method != "POST" && r.Method != "OPTIONS" {
+            http.Error(w, "Unsupported method. Please check.", http.StatusNotFound)
+            return
         }
 
         var t_str rtc_string_token_struct
         var unmarshalErr *json.UnmarshalTypeError
-
-
         str_decoder := json.NewDecoder(r.Body)
-
-
         string_err := str_decoder.Decode(&t_str)
 
         if (string_err == nil) {
                 string_uid = t_str.Uid_rtc_string
-
                 is_string_uid = true
-		channel_name = t_str.channelName
-
-    }
+		        channel_name = t_str.Channel_name
+                role_num = t_str.Role
+                switch role {
+                case 0:
+                    role = rtctokenbuilder.RoleAttendee
+                case 1:
+                    role = rtctokenbuilder.RolePublisher
+                case 2:
+                    role = rtctokenbuilder.RoleSubscriber
+                case 101:
+                    role = rtctokenbuilder.RoleAdmin
+                }
+        }
 
         if (string_err != nil) {
-
-                
                 is_string_uid = false
-                  if errors.As(string_err, &unmarshalErr){
-                   errorResponse(w, "Bad request. Wrong type provided for field " + unmarshalErr.Value  + unmarshalErr.Field + unmarshalErr.Struct, http.StatusBadRequest)
+                if errors.As(string_err, &unmarshalErr){
+                   errorResponse(w, "Bad request. Please check your params. ", http.StatusBadRequest)
                 } else {
                 errorResponse(w, "Bad request.", http.StatusBadRequest)
             }
-
             return
-
-    }
-
-    int_uid = 0
-
-
-        getRtcToken(is_string_uid, int_uid, string_uid, channel_name)
-
-        // fmt.Fprintf(w, rtc_token)
+        }
+        // Set a value for int_uid
+        int_uid = 0
+        generateRtcToken(is_string_uid, int_uid, string_uid, channel_name)
         errorResponse(w, rtc_token, http.StatusOK)
-
         log.Println(w, r)
 
-
-
 }
-
-
-
 
 
 func rtmTokenHandler(w http.ResponseWriter, r *http.Request){
+    w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+        w.Header().Set("Access-Control-Allow-Origin", "*")
+        w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS");
+        w.Header().Set("Access-Control-Allow-Headers", "*");
 
-
-        if r.Method != "GET" {
-            http.Error(w, "Unsupported method. Please check.", http.StatusNotFound)
+        if r.Method == "OPTIONS" {
+            w.WriteHeader(http.StatusOK)
             return
         }
-        getRtmToken()
-        fmt.Fprintf(w, rtm_token)
-        log.Println(w, r)
-}
 
-// TODO: Still hardcoded for whiteboard
-func whiteTokenHandler(w http.ResponseWriter, r *http.Request){
-
-        if r.Method != "GET" {
+        if r.Method != "POST" && r.Method != "OPTIONS" {
             http.Error(w, "Unsupported method. Please check.", http.StatusNotFound)
             return
         }
 
 
-	whiteboard_token = "This is a test whiteboardtoken"
+        var t_rtm_str rtm_token_struct
+        var unmarshalErr *json.UnmarshalTypeError
+        str_decoder := json.NewDecoder(r.Body)
+        rtm_err := str_decoder.Decode(&t_rtm_str)
 
-        fmt.Fprintf(w, whiteboard_token)
+        if (rtm_err == nil) {
+            rtm_uid = t_rtm_str.Uid_rtm
+        }
 
+        if (rtm_err != nil) {
+            is_string_uid = false
+            if errors.As(rtm_err, &unmarshalErr){
+               errorResponse(w, "Bad request. Please check your params.", http.StatusBadRequest)
+            } else {
+            errorResponse(w, "Bad request.", http.StatusBadRequest)
+        }
+        return
+    }
+
+        generateRtmToken(rtm_uid)
         log.Println(w, r)
 }
+
 
 func errorResponse(w http.ResponseWriter, message string, httpStatusCode int){
-
 	w.Header().Set("Content-Type", "application/json")
+    w.Header().Set("Access-Control-Allow-Origin", "*")
 	w.WriteHeader(httpStatusCode)
 	resp := make(map[string]string)
 	resp["token"] = message
@@ -240,14 +254,16 @@ func errorResponse(w http.ResponseWriter, message string, httpStatusCode int){
 
 func main(){
     // Handling routes
+    // RTC token from RTC num uid
     http.HandleFunc("/fetch_rtc_token", rtcTokenHandler)
+    // RTC token from RTC string uid
     http.HandleFunc("/fetch_rtc_token_string", rtcStringTokenHandler)
+    // RTM token from RTM uid
     http.HandleFunc("/fetch_rtm_token", rtmTokenHandler)
-    http.HandleFunc("/fetch_whiteboard_token", whiteTokenHandler)
 
-    fmt.Printf("Starting server at port 8081\n")
+    fmt.Printf("Starting server at port 8082\n")
 
-    if err := http.ListenAndServe(":8081", nil); err != nil {
+    if err := http.ListenAndServe(":8082", nil); err != nil {
         log.Fatal(err)
     }
 }
