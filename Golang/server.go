@@ -65,10 +65,10 @@ func getRtcToken(is_string_uid bool, int_uid uint32, string_uid string, channelN
 
 }
 
-func getRtmToken(){
+func getRtmToken(uid string){ 
 
-	appID := "970CA35de60c44645bbae8a215061b33"
-	appCertificate := "5CFd2fd1755d40ecb72977518be15d3b"
+	appID := "Your App ID"
+	appCertificate := "Your App Certificate"
 	user := "test_user_id"
 	expireTimeInSeconds := uint32(3600)
 	currentTimestamp := uint32(time.Now().UTC().Unix())
