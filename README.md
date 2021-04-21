@@ -13,6 +13,7 @@ Token server sample based on Golang. You can deploy this server locally, on a vi
 ```shell
 go get
 ```
+> For users in China, GOPROXY is recommended. See https://goproxy.cn/.
 
 2. Run the project.
 
