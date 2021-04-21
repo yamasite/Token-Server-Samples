@@ -25,3 +25,7 @@ go run server.go
 ### RTC Web SDK 4.x.
 
 Web client based on RTC Web SDK 4.x. You can use this client to fetch token from the sample server.
+
+#### How to run
+
+Open `index.html`.
