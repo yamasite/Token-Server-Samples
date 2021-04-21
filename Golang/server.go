@@ -1,8 +1,8 @@
 package main
 
 import (
-    "RtcTokenBuilder"
-    "RtmTokenBuilder"
+    rtctokenbuilder "github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src/RtcTokenBuilder"
+    rtmtokenbuilder "github.com/AgoraIO/Tools/DynamicKey/AgoraDynamicKey/go/src/RtmTokenBuilder"
     "fmt"
     "log"
     "net/http"
@@ -41,8 +41,8 @@ var role rtctokenbuilder.Role
 
 func generateRtcToken(is_string_uid bool, int_uid uint32, string_uid string, channelName string){
 
-	appID := "App ID"
-	appCertificate := "Certificate"
+	appID := "Your_App_ID"
+	appCertificate := "Your_Certificate"
 	expireTimeInSeconds := uint32(3600)
 	currentTimestamp := uint32(time.Now().UTC().Unix())
 	expireTimestamp := currentTimestamp + expireTimeInSeconds
@@ -71,8 +71,8 @@ func generateRtcToken(is_string_uid bool, int_uid uint32, string_uid string, cha
 
 func generateRtmToken(rtm_uid string){
 
-	appID := "App ID"
-	appCertificate := "Certificate"
+	appID := "Your_App_ID"
+	appCertificate := "Your_Certificate"
 	expireTimeInSeconds := uint32(3600)
 	currentTimestamp := uint32(time.Now().UTC().Unix())
 	expireTimestamp := currentTimestamp + expireTimeInSeconds
