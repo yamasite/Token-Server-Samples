@@ -1,5 +1,9 @@
 # Token-Server-Samples
 
+## Architecture
+
+![](https://web-cdn.agora.io/docs-files/1608020494998)
+
 ## Servers
 
 ### Golang
