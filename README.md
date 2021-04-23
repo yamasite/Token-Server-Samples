@@ -1,8 +1,19 @@
-# Token-Server-Samples
+# Access-Token-Server-Samples
+
+This repository contains:
+
+- Sample access token servers
+- Sample clients that can fetch access tokens from the token servers
 
 ## Architecture
 
+### Access token authentication for Agora RTC SDK
+
 ![](https://web-cdn.agora.io/docs-files/1608020494998)
+
+### Access token authentication for Agora RTM SDK
+
+Work in progress
 
 ## Servers
 
