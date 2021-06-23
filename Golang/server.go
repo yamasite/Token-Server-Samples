@@ -236,6 +236,7 @@ func rtmTokenHandler(w http.ResponseWriter, r *http.Request){
     }
 
         generateRtmToken(rtm_uid)
+	errorResponse(w, rtm_token, http.StatusOK)
         log.Println(w, r)
 }
 
